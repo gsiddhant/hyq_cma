@@ -1,0 +1,139 @@
+<?xml version="1.0"?>
+
+<robot name="hyq" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+	<!-- This argument allows us to load joint sensors that measure the internal wrenches -->
+	<xacro:arg name="load_force_sensors" default="false"/>
+
+	<!-- The following included files set up definitions of parts of the robot body -->
+	<xacro:include filename="$(find hyq_description)/urdfs/common.xacro"/>
+	<xacro:include filename="$(find sensors_description)/urdfs/common.xacro"/>
+	
+	<!-- HyQ trunk -->
+	<xacro:include filename="$(find hyq_description)/urdfs/trunk/trunk.urdf.xacro"/>
+
+	<!-- HyQ legs -->
+	<xacro:include filename="$(find hyq_description)/urdfs/leg/leg.urdf.xacro"/>
+
+	<!-- HyQ sensors -->
+	<xacro:include filename="$(find sensors_description)/urdfs/sensors/microstrain_3dmgx425_imu.urdf.xacro"/>
+    <xacro:include filename="$(find sensors_description)/urdfs/sensors/kvh_1775_imu.urdf.xacro"/>
+	<xacro:include filename="$(find sensors_description)/urdfs/sensors/asus_xtion.urdf.xacro"/>
+	<!-- Velodyne disabled because it takes too long to load-up -->
+	<!-- <xacro:include filename="$(find sensors_description)/urdfs/sensors/velodyne.urdf.xacro"/> -->
+	<xacro:include filename="$(find sensors_description)/urdfs/sensors/kinect.urdf.xacro"/>
+	<xacro:include filename="$(find sensors_description)/urdfs/sensors/ptu_d46.urdf.xacro"/>
+	<xacro:include filename="$(find sensors_description)/urdfs/sensors/bumblebee.urdf.xacro"/>
+	<xacro:include filename="$(find sensors_description)/urdfs/sensors/vislab_3dve.urdf.xacro"/>
+	<xacro:include filename="$(find sensors_description)/urdfs/sensors/hokuyo_laser.urdf.xacro"/>
+	<xacro:include filename="$(find sensors_description)/urdfs/sensors/multisense_sl.urdf.xacro"/>
+
+	<!-- generic simulator_gazebo plugins for starting mechanism control, ros time -->
+	<xacro:include filename="$(find hyq_description)/gazebo/gazebo.urdf.xacro"/>
+
+	<!-- Now we can start using the macros included above to define the actual HyQ -->
+
+	<!-- The first use of a macro. This one was defined in trunk.urdf.xacro above.
+A macro like this will expand to a set of link and joint definitions, and to additional
+Gazebo-related extensions (sensor plugins, etc). The macro takes an argument, name,
+that equals "base", and uses it to generate names for its component links and joints
+(e.g., base_link). The included origin block is also an argument to the macro. By convention,
+the origin block defines where the component is w.r.t its parent (in this case the parent
+is the world frame). For more, see http://www.ros.org/wiki/xacro -->
+
+	<!-- body -->
+	<!-- trunk -->
+	<xacro:hyq_trunk name="base">
+		<origin xyz="-0.443 -0.191 -0.276" rpy="0 0 0"/>
+	</xacro:hyq_trunk>
+
+	<!-- LF leg -->
+	<xacro:hyq_leg
+		name="lf"
+		parent="trunk"
+		reflect_hip="1"
+		reflect_upper="1"
+		reflect_front="1"
+		load_force_sensors="$(arg load_force_sensors)">
+		<origin xyz="${d_fh/2} ${d_lr/2} 0" rpy="0 ${PI/2} ${PI}"/>
+	</xacro:hyq_leg>
+
+	<!-- RF leg -->
+	<xacro:hyq_leg
+		name="rf"
+		parent="trunk"
+		reflect_hip="-1"
+		reflect_upper="-1"
+		reflect_front="1"
+		load_force_sensors="$(arg load_force_sensors)">
+		<origin xyz="${d_fh/2} ${-d_lr/2} 0" rpy="0 ${PI/2} 0"/>
+	</xacro:hyq_leg>
+
+	<!-- LH leg -->
+	<xacro:hyq_leg
+		name="lh"
+		parent="trunk"
+		reflect_hip="-1"
+		reflect_upper="1"
+		reflect_front="-1"
+		load_force_sensors="$(arg load_force_sensors)">
+		<origin xyz="${-d_fh/2} ${d_lr/2} 0" rpy="0 ${PI/2} ${PI}"/>
+	</xacro:hyq_leg>
+
+	<!-- RH leg -->
+	<xacro:hyq_leg
+		name="rh"
+		parent="trunk"
+		reflect_hip="1"
+		reflect_upper="-1"
+		reflect_front="-1"
+		load_force_sensors="$(arg load_force_sensors)">
+		<origin xyz="${-d_fh/2} ${-d_lr/2} 0" rpy="0 ${PI/2} 0"/>
+	</xacro:hyq_leg>
+
+	<!-- IMU trunk -->
+	<xacro:microstrain_3dmgx425_imu
+		parent="trunk"
+		imu_name="trunk_imu"
+		imu_topic="trunk_imu_1/data"
+		update_rate="250">
+		<origin xyz="0.290 0.000 0.0999214" rpy="0 ${-PI} 0"/>
+	</xacro:microstrain_3dmgx425_imu>
+
+    <!-- IMU trunk -->
+<!-- TODO We have to substitute the microstrain IMU with this one. Note that the imu_name has to be
+trunk_imu because the DLS HW interfaces hardcoded that name 
+    	<xacro:kvh_1775_imu
+        parent="trunk"
+        imu_name="trunk_imu"
+        imu_topic="trunk_imu_2/data"
+        update_rate="250">
+        <origin xyz="0.352845 0.0029 0.0503678" rpy="0 ${-PI} 0"/>
+    </xacro:kvh_1775_imu>
+-->
+
+	<!-- Hokuyo -->
+	<xacro:hokuyo_laser
+		name="laser"
+		parent="trunk"
+		ros_topic="scan" 
+		update_rate="10" 
+		min_angle="-5"
+		max_angle="5"
+		range="4.0">
+    <origin xyz="0.475 0.0 -0.08823" rpy="${PI} 0.0 0"/>
+	</xacro:hokuyo_laser>
+
+    <xacro:multisense_sl parent="trunk" prefix="multisense">
+		<!-- <origin xyz="0.741737 0.0191395 0.143229" rpy="-0.0241345 0.446222 -0.0347202"/> -->
+		<origin xyz="0.761 0.005 0.127" rpy="-0.028 0.515 -0.013"/>
+    </xacro:multisense_sl>
+
+	<!-- Asus Xtion Pro -->
+	<xacro:asus_xtion_camera name="asus" parent="trunk">
+		<origin xyz="0.624 -0.013 0.061" rpy="0.018 0.535 0.057"/>
+	</xacro:asus_xtion_camera>
+
+</robot>
+
+

@@ -1,0 +1,97 @@
+joint_limits:
+  lf_haa_joint:
+    has_position_limits: true
+    min_position: -1.22
+    max_position: 0.44
+    has_velocity_limits: true
+    max_velocity: 0.8
+    has_acceleration_limits: true
+    max_acceleration: 0.5
+  lf_hfe_joint:
+    has_position_limits: true
+    min_position: -0.87
+    max_position: 1.22
+    has_velocity_limits: true
+    max_velocity: 0.82
+    has_acceleration_limits: true
+    max_acceleration: 0.5
+  lf_kfe_joint:
+    has_position_limits: true
+    min_position: -2.44
+    max_position: -0.36
+    has_velocity_limits: true
+    max_velocity: 0.8
+    has_acceleration_limits: true
+    max_acceleration: 0.5
+  lh_haa_joint:
+    has_position_limits: true
+    min_position: -1.22
+    max_position: 0.44
+    has_velocity_limits: true
+    max_velocity: 0.82
+    has_acceleration_limits: true
+    max_acceleration: 0.5
+  lh_hfe_joint:
+    has_position_limits: true
+    min_position: -1.22
+    max_position: 0.87
+    has_velocity_limits: true
+    max_velocity: 0.8
+    has_acceleration_limits: true
+    max_acceleration: 0.5
+  lh_kfe_joint:
+    has_position_limits: true
+    min_position: 0.35
+    max_position: 2.44
+    has_velocity_limits: true
+    max_velocity: 0.82
+    has_acceleration_limits: true
+    max_acceleration: 0.5
+  rf_haa_joint:
+    has_position_limits: true
+    min_position: -1.22
+    max_position: 0.44
+    has_velocity_limits: true
+    max_velocity: 0.8
+    has_acceleration_limits: true
+    max_acceleration: 0.5
+  rf_hfe_joint:
+    has_position_limits: true
+    min_position: -0.87
+    max_position: 1.22
+    has_velocity_limits: true
+    max_velocity: 0.82
+    has_acceleration_limits: true
+    max_acceleration: 0.5
+  rf_kfe_joint:
+    has_position_limits: true
+    min_position: -2.44
+    max_position: -0.36
+    has_velocity_limits: true
+    max_velocity: 0.8
+    has_acceleration_limits: true
+    max_acceleration: 0.5
+  rh_haa_joint:
+    has_position_limits: true
+    min_position: -1.22
+    max_position: 0.44
+    has_velocity_limits: true
+    max_velocity: 0.8
+    has_acceleration_limits: true
+    max_acceleration: 0.5
+  rh_hfe_joint:
+    has_position_limits: true
+    min_position: -1.22
+    max_position: 0.87
+    has_velocity_limits: true
+    max_velocity: 0.8
+    has_acceleration_limits: true
+    max_acceleration: 0.5
+  rh_kfe_joint:
+    has_position_limits: true
+    min_position: 0.35
+    max_position: 2.44
+    has_velocity_limits: true
+    max_velocity: 0.8
+    has_acceleration_limits: true
+    max_acceleration: 0.5

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+	<gazebo>
+		<plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+			<robotNamespace>/hyq</robotNamespace>
+			<!--<robotSimType>dls_gazebo_interface/DLSHWSim</robotSimType>-->
+			<controlPeriod>0.004</controlPeriod>
+		</plugin>
+
+		<plugin filename="libgazebo_ros_p3d.so" name="gazebo_ros_p3d">
+			<robotNamespace>/hyq</robotNamespace>
+		 	<bodyName>trunk</bodyName>
+			<topicName>ground_truth</topicName>
+			<frameName>world</frameName>
+			<xyzOffsets>0 0 0</xyzOffsets>
+			<rpyOffsets>0 0 0</rpyOffsets>
+			<gaussianNoise>0</gaussianNoise>
+			<alwaysOn>true</alwaysOn>
+			<updateRate>250.0</updateRate>
+		</plugin>
+
+		<plugin name="joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
+			<jointName>lf_haa_joint, lf_hfe_joint, lf_kfe_joint, lh_haa_joint, lh_hfe_joint, lh_kfe_joint, rf_haa_joint, rf_hfe_joint, rf_kfe_joint, rh_haa_joint, rh_hfe_joint, rh_kfe_joint</jointName>
+		</plugin>
+
+	</gazebo>
+
+</robot>

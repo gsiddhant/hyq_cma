@@ -1,0 +1,77 @@
+<?xml version="1.0" ?>
+<launch>
+
+	<arg name="sensors" default="true"/>
+
+	<!-- Load the sensors that measured the internal wrench in the joints -->
+	<arg name="internal_wrench" default="false"/>
+
+	<!-- These are the arguments you can pass this launch file, for example paused:=true -->
+	<arg name="paused" default="true"/>
+	<arg name="use_sim_time" default="true"/>
+	<arg name="gui" default="true"/>
+	<arg name="headless" default="false"/>
+	<arg name="debug" default="false"/>
+	<arg name="dls_empty_world" default="true"/>
+	<arg name="world_name" default="empty.world"/>
+
+	<arg if="$(arg dls_empty_world)" name="full_world_name" default="$(find dls_gazebo)/worlds/$(arg world_name)"/>
+	<arg unless="$(arg dls_empty_world)" name="full_world_name" default="worlds/$(arg world_name)"/>
+
+	<!-- Set use_sim_time flag -->
+	<group if="$(arg use_sim_time)">
+		<param name="/use_sim_time" value="true" />
+	</group>
+
+	<!-- Set command arguments -->
+	<arg unless="$(arg paused)" name="command_arg1" value=""/>
+	<arg if="$(arg paused)" name="command_arg1" value="-u"/>
+	<arg unless="$(arg headless)" name="command_arg2" value=""/>
+	<arg if="$(arg headless)" name="command_arg2" value="-r"/>
+	<arg unless="$(arg debug)" name="script_type" value="gzserver"/>
+	<arg if="$(arg debug)" name="script_type" value="debug"/>
+
+	<!-- Start gazebo server-->
+	<node name="gazebo" pkg="gazebo_ros" type="$(arg script_type)" respawn="false" output="screen"
+		args="$(arg command_arg1) $(arg command_arg2) $(arg full_world_name)" />
+
+	<!-- Start gazebo client -->
+	<group if="$(arg gui)">
+		<node name="gazebo_gui" pkg="gazebo_ros" type="gzclient" respawn="false" output="screen"/>
+	</group>
+
+	<!-- Send hyq urdf to parameter server and spawn it -->
+	<include file="$(find hyq_description)/launch/upload.launch">
+		<arg name="sensors" value="$(arg sensors)" />
+		<arg name="internal_wrench" value="$(arg internal_wrench)" />
+	</include>
+
+	<!-- Spawn a robot into Gazebo -->
+	<node name="spawn_hyq_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model hyq -z 0.65"/>
+
+	<!-- Get robot to 0 position -->
+	<node name="goto0" pkg="hyq_description" type="go0" args="10.0"  />
+
+	<group ns="/hyq">
+		<rosparam file="$(find hyq_description)/config/pos_controllers.yaml" command="load"/>
+		<node name="joint_controller_spawner" pkg="controller_manager" type="spawner" args="lf_haa_control lf_hfe_control lf_kfe_control lh_haa_control lh_hfe_control lh_kfe_control rf_haa_control rf_hfe_control rf_kfe_control rh_haa_control rh_hfe_control rh_kfe_control"/>
+	</group>
+
+	<!-- publish the joint and robot states -->
+	<group if="$(arg gui)">
+		<node name="joint_state_publisher" pkg="joint_state_publisher"
+			type="joint_state_publisher" respawn="true" />
+	</group>
+
+	<node name="robot_state_publisher" pkg="robot_state_publisher"
+		type="state_publisher" respawn="true">
+	</node>
+
+<!--
+	<node pkg="trajectory_filter_server" name="trajectory_filter" type="trajectory_filter_server" output="screen">
+   <rosparam command="load" file="$(find hyq_description)/config/joint_limits.yaml"/>
+   <rosparam command="load" file="$(find hyq_description)/config/filters.yaml"/>
+  </node>
+-->
+
+</launch>
