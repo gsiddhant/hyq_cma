@@ -25,30 +25,30 @@ model_name = 'hyq'
 param_name = 'robot_description'
 # LF foot
 joint_names.append('lf_haa_joint')
-joint_positions.append(-0.3)
+joint_positions.append(-0.2)
 joint_names.append('lf_hfe_joint')
-joint_positions.append(0.7)
+joint_positions.append(0.65)
 joint_names.append('lf_kfe_joint')
 joint_positions.append(-1.4)
 # RF foot
 joint_names.append('rf_haa_joint')
-joint_positions.append(-0.3)
+joint_positions.append(-0.2)
 joint_names.append('rf_hfe_joint')
-joint_positions.append(0.7)
+joint_positions.append(0.65)
 joint_names.append('rf_kfe_joint')
 joint_positions.append(-1.4)
 # LH foot
 joint_names.append('lh_haa_joint')
 joint_positions.append(-0.2)
 joint_names.append('lh_hfe_joint')
-joint_positions.append(-0.75)
+joint_positions.append(-0.65)
 joint_names.append('lh_kfe_joint')
 joint_positions.append(1.4)
 # RH foot
 joint_names.append('rh_haa_joint')
 joint_positions.append(-0.2)
 joint_names.append('rh_hfe_joint')
-joint_positions.append(-0.75)
+joint_positions.append(-0.65)
 joint_names.append('rh_kfe_joint')
 joint_positions.append(1.4)
 
@@ -69,6 +69,7 @@ JointControls = ['lf_haa_control', 'lf_hfe_control', 'lf_kfe_control', \
                 'rf_haa_control', 'rf_hfe_control', 'rf_kfe_control', \
                 'rh_haa_control', 'rh_hfe_control', 'rh_kfe_control']
 
+
 # Min and Max position of each of the Joints
 JointLimits = [[-1.22, 0.44], [-0.87, 1.22], [-2.44, -0.36], \
                 [-1.22, 0.44], [-1.22, 0.87], [0.36, 2.44], \
@@ -76,12 +77,12 @@ JointLimits = [[-1.22, 0.44], [-0.87, 1.22], [-2.44, -0.36], \
                 [-1.22, 0.44], [-1.22, 0.87], [0.36, 2.44]]
 
 # Mid value of the Joint Position Limits
-JointMid = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+JointMid = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 # (Max - Min)/2: Can be multiplied with a control function and added with the mid value to ensure limits
-JointAmp = JointMid
+JointAmp = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 
-evalTime = 3   # Total evaluation period (seconds)
+evalTime = 4  # Total evaluation period (seconds)
 conFreq = 100  # Rate of each iteration (Hz)
 numOmega = 16     # Number of mean values considered
 
@@ -89,11 +90,15 @@ for i in range(len(JointLimits)):
     JointMid[i] = (JointLimits[i][0] + JointLimits[i][1])/2
     JointAmp[i] = abs((JointLimits[i][1] - JointLimits[i][0])/2)
     if i%3 == 0:
-        JointMid[i] = 0
-        JointAmp[i] = JointAmp[i]/2
+        JointMid[i] = -0.2
+        JointAmp[i] = JointAmp[i]/1.5
+    elif (i-2)%3 == 0:
+        JointAmp[i] = JointAmp[i]/1.2
+    elif (i-1)%3 == 0:
+        JointMid[i] = (JointMid[i]*0.65)/abs(JointMid[i])
+        JointAmp[i] = JointAmp[i]/1.01
 
 JointLimits = np.matrix(JointLimits)
-
 # HyQ Joint Positions
 hyq_jp = [Float64() for controller in JointControls]
 
@@ -113,7 +118,7 @@ def js_callback(msg):
     hyq_js = msg
 
 
-des_state = [0, 0, 0.5, 0, -0.4, 0]
+des_state = [5.0, 0.0, 0.5, 0.0, 0.0, 0.0]
 
 
 # ---------------------------------------------------------------------------- #
@@ -126,15 +131,17 @@ maxCtrl = 1
 
 nVar = numCtrl*numOmega
 
-xmean = stats.truncnorm.rvs((-0.8)/0.5,(0.8)/0.5,loc=0,scale=0.5,size=(nVar,))
+xmean = stats.truncnorm.rvs((-10)/0.5,(10)/0.5,loc=0,scale=0.5,size=(nVar,))
 
-la = (4 + int(round(3*np.log(nVar))))*6
+la = (4 + int(round(3*np.log(nVar))))*3
 mu = int(round(la/2))
 w = np.log(mu + 0.5) - np.log(range(1,mu+1))
+w = np.power(w,2)
 w = w/np.sum(w)
+
 mueff = np.square(np.sum(w))/np.sum(np.square(w))
 
-sigma = 0.25*(maxCtrl)
+sigma = 0.5
 
 cs = (mueff + 2)/(nVar + mueff + 5)
 damps = 1 + cs + 2*max(np.sqrt((mueff - 1)/(nVar + 1)) - 1,0)
@@ -159,16 +166,12 @@ arz = np.zeros((nVar,la))
 arx = np.zeros((nVar,la))
 
 
-def evalFitness(p, r):
-    return (p + r)
-
-
 def finalCost(hyq_state, des_state):
 
     des_state = np.array(des_state)
 
-    Q1 = 1000
-    Q2 = 500
+    Q1 = 1000.0
+    Q2 = 0.0
 
     if len(des_state) != 6:
         print('Length of des_state must be 6.')
@@ -205,21 +208,10 @@ def finalCost(hyq_state, des_state):
 def recCost(prevJointState, curJointState, hyq_state, des_state):
     global JointLimits
 
+    Q1 = 50
+    Q2 = 50
+
     des_state = np.array(des_state)
-
-    Q1 = 10
-    Q2 = 1
-
-    curJointState = np.array(curJointState)
-    prevJointState = np.array(prevJointState)
-
-    q_max = np.clip(np.subtract(curJointState.reshape((np.size(curJointState),1)), JointLimits[:,1]), 0, 5)
-    q_min = np.clip(np.subtract(curJointState.reshape((np.size(curJointState),1)), JointLimits[:,0]), -5, 0)
-
-    r1 = np.matmul(np.transpose(q_max),q_max) + np.matmul(np.transpose(q_min),q_min)
-
-    r2 = np.subtract(curJointState, prevJointState)
-    r2 = np.dot(r2,r2)
 
     hyq_Pos = hyq_state.position
     hyq_x = hyq_Pos.x
@@ -243,10 +235,10 @@ def recCost(prevJointState, curJointState, hyq_state, des_state):
     pos_error = np.subtract(hyq_position, des_position)
     ori_error = np.subtract(hyq_orientation, des_orientation)
 
-    p = Q1*np.matmul(np.transpose(pos_error), pos_error) \
-    + Q2*np.matmul(np.transpose(ori_error), ori_error)
+    p1 = Q1*np.matmul(np.transpose(pos_error), pos_error)
+    p2 = Q2*np.matmul(np.transpose(ori_error), ori_error)
 
-    return (r1 + 0.1*r2 + p)
+    return (p1)
 
 
 # ---------------------------------------------------------------------------- #
@@ -264,23 +256,12 @@ def controlSeq(weights):
 
     T = np.linspace(0, evalTime, evalTime*conFreq, endpoint = True)
     control = np.zeros(evalTime*conFreq)
-
-    mu = np.linspace(0, evalTime, numOmega, endpoint = True)
-
     ind = 0
 
     for t in T:             # t = t/100
-        wSum = 0
-        cSum = 0
-
-        for i in range(numOmega):
-            wSum += weights[i]*RBFKernel(t, mu[i])
-            cSum += RBFKernel(t, mu[i])
-
-        if cSum != 0:
-            control[ind] = wSum/cSum
-        else:
-            control[ind] = 0
+        control[ind] = weights[0] + weights[1]*math.sin(t*weights[2]*math.pi + weights[3]) + weights[4]*math.cos(t*weights[5]*math.pi + weights[6]) \
+                        - weights[7]*math.sin(t*weights[8]*math.pi + weights[9]) - weights[10]*math.cos(t*weights[11]*math.pi + weights[12]) + \
+                        + weights[13]*math.sin(t*weights[14]*math.pi + weights[15])
 
         ind += 1
 
@@ -329,13 +310,13 @@ if __name__ == '__main__':
     unpause_physics = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
 
     generation = 0
-    lastGenBest = 10000
+    lastGenBest = 1000000
 
     while True:
 
         generation += 1
         arfitness *= 0
-        arfitness += 10000
+        arfitness += 1000000
 
         for k in range(la):
 
@@ -351,13 +332,21 @@ if __name__ == '__main__':
 
             unpause_physics = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
 
-            arz[:,k] = stats.truncnorm.rvs((-1)/0.5,(1)/0.5,loc=0,scale=0.5,size=(nVar,))
+            arz[:,k] = stats.truncnorm.rvs((-10)/0.5,(10)/0.5,loc=0,scale=0.5,size=(nVar,))
             arx[:,k] = (xmean + sigma*(np.matmul(B, np.matmul(D, arz[:,k]))))
-            arx[:,k] = np.clip(arx[:,k],-1,1)
             Cweights = arx[:,k].reshape((numCtrl,numOmega))
 
             ControlMat = GenerateControlMat(Cweights)
             [rows, cols] = np.shape(ControlMat)
+
+            des_state_rec = [5, 0, 0, 0, 0, 0]
+            shift = des_state_rec[0]/cols
+            des_state_rec[0] = shift
+
+            hyq_state = (hyq_stateService('hyq','')).pose
+            des_state[0] = hyq_state.position.x + 5
+            des_state[1] = hyq_state.position.y
+            des_state[1] = hyq_state.position.z
 
             rcost = 0
             p_hyq_js_pos = np.zeros((numCtrl,))
@@ -368,20 +357,25 @@ if __name__ == '__main__':
 
                 for controller in JointControls:
                     ind = JointControls.index(controller)
-                    hyq_jp[ind] = 1.1*ControlMat[ind, i]*JointAmp[ind] + JointPos[ind]
+                    hyq_jp[ind] = ControlMat[ind, i]
                     pub[ind].publish(hyq_jp[ind])
 
                 hyq_state = (hyq_stateService('hyq','')).pose
-                rcost += recCost(p_hyq_js_pos[0:12], c_hyq_js_pos[0:12], hyq_state, des_state)*0.01
-                #print('Im here! ', rcost)
+                rcost += np.asscalar(recCost(p_hyq_js_pos[0:12], c_hyq_js_pos[0:12], hyq_state, des_state_rec))*0.01
+                des_state_rec[0] += shift
                 p_hyq_js_pos = hyq_js.position
                 pubRate.sleep()
 
             hyq_state = (hyq_stateService('hyq','')).pose
-            rcost += np.asscalar(finalCost(hyq_state, des_state))
 
-            arfitness[k] = rcost
+            #np.asscalar(finalCost(hyq_state, des_state))
+
+            hyq_Qua = hyq_state.orientation
+            (hyq_roll, hyq_pitch, hyq_yaw) = euler_from_quaternion([hyq_Qua.x, hyq_Qua.y, hyq_Qua.z, hyq_Qua.w])
+
+            arfitness[k] = 100*np.exp(-1*((hyq_state.position.x)**2)/2) + rcost
             print('Generation: ', generation, ' Genome: ', k + 1, ' Cost: ', arfitness[k], ' Prev Best Fitness: ', lastGenBest, ' Current Gen Best: ', arfitness.min())
+            rcost = 0
 
         lastGenBest = min(lastGenBest,arfitness.min())
 
@@ -393,7 +387,7 @@ if __name__ == '__main__':
             t_xmean += arx[:,arindex[k]]*w[k]
         t_xmean = t_xmean/mu
 
-        xmean = np.clip(t_xmean,-0.8,0.8)
+        xmean = t_xmean
 
 
         t_zmean = np.zeros(nVar,)
@@ -419,3 +413,14 @@ if __name__ == '__main__':
             C = np.triu(C) + np.transpose(np.triu(C,1))
             D, B = np.linalg.eig(C)
             D = np.diag(np.sqrt(D))
+
+        np.savetxt('xmean_'+str(generation)+'.csv', xmean, delimiter=",")
+        np.savetxt('C_'+str(generation)+'.csv', C, delimiter=",")
+        np.savetxt('B_'+str(generation)+'.csv', B, delimiter=",")
+        np.savetxt('D_'+str(generation)+'.csv', D, delimiter=",")
+        np.savetxt('arfitness_'+str(generation)+'.csv', arfitness, delimiter=",")
+        np.savetxt('sigma_'+str(generation)+'.csv', np.array([1, sigma]), delimiter=",")
+        np.savetxt('ps_'+str(generation)+'.csv', np.array(ps), delimiter=",")
+        np.savetxt('pc_'+str(generation)+'.csv', np.array(pc), delimiter=",")
+        np.savetxt('zmean_'+str(generation)+'.csv', zmean, delimiter=",")
+        np.savetxt('arx_'+str(generation)+'.csv', arx, delimiter=",")
